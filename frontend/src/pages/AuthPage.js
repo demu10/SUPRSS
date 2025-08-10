@@ -1,41 +1,83 @@
-import React, { useState, useContext } from 'react';
-// import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import logo from '../assets/logo.png'; // chemin selon ta structure
+import { toast } from 'react-toastify';
+import logo from '../assets/logo.png';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 import api from '../api';
 
 export default function AuthPage() {
   const { setToken } = useContext(AuthContext);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
+
+  // ✅ États
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(''); // <-- remets cette ligne
+  const [showPassword, setShowPassword] = useState(false);
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [msg, setMsg] = useState('');
   const [isRegister, setIsRegister] = useState(false);
 
+
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setNom('');
+    setPrenom('');
+    setMsg('');
+  }, []);
+
+
+  // Connexion
   const login = async () => {
     try {
       const res = await api.post('/users/login', { email, password });
       setToken(res.data.token);
-      alert("Connexion réussie !");
+      toast.success("Connexion réussie !");
+      setEmail('');
+      setPassword('');
+      setMsg('');
+      setTimeout(() => navigate('/home'), 1000);
     } catch (err) {
-      setMsg(err.response?.data?.msg || 'Erreur de connexion');
+      const msg = err.response?.data?.msg;
+
+      // ✅ Cas spécifique : le compte est Google-only ou hybride sans mot de passe défini
+      if (
+        msg?.includes("Ce compte a été créé via Google") ||
+        msg?.includes("définir un mot de passe")
+      ) {
+        toast.info("Ce compte nécessite un mot de passe. Redirection...");
+        setTimeout(() => {
+          navigate('/set-password', { state: { email } }); // ⬅️ passage d'email à la page set-password
+        }, 1500);
+      } else {
+        setMsg(msg || 'Erreur de connexion');
+      }
     }
   };
 
+
+  // Inscription
   const register = async () => {
     try {
       const res = await api.post('/users/register', { email, password, nom, prenom });
       setToken(res.data.token);
-      alert("Inscription réussie !");
+      toast.success("Inscription réussie !");
+      setIsRegister(false); // Redirige vers formulaire de connexion
+      setEmail('');
+      setPassword('');
+      setNom('');
+      setPrenom('');
+      setMsg('');
+      setTimeout(() => navigate('/'), 1000);
     } catch (err) {
       setMsg(err.response?.data?.msg || "Erreur lors de l'inscription");
     }
   };
 
+  // Auth OAuth
   const loginWithGoogle = () => {
     window.location.href = 'http://localhost:5000/api/auth/google';
   };
@@ -74,13 +116,30 @@ export default function AuthPage() {
         style={styles.input}
         onChange={(e) => setEmail(e.target.value)}
       />
-      <input
-        type="password"
-        placeholder="Mot de passe"
-        value={password}
-        style={styles.input}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+
+      <div style={{ position: 'relative' }}>
+        <input
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Mot de passe"
+          value={password}
+          style={styles.input}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <span
+          onClick={() => setShowPassword(!showPassword)}
+          style={{
+            position: 'absolute',
+            right: 15,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            cursor: 'pointer',
+            color: '#555',
+            fontSize: 14
+          }}
+        >
+          {showPassword ? '🙈' : '👁️'}
+        </span>
+      </div>
 
       <button style={styles.button} onClick={isRegister ? register : login}>
         {isRegister ? "S'inscrire" : "Se connecter"}
@@ -117,6 +176,7 @@ export default function AuthPage() {
   );
 }
 
+// 💄 Styles
 const styles = {
   container: {
     maxWidth: 420,
@@ -126,9 +186,12 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: 12,
     marginTop: 60,
-    background: '#fefefe',
+    background: 'rgba(255, 255, 255, 0.75)', // ✅ verre dépoli
+    backdropFilter: 'blur(10px)',            // ✅ flou en arrière-plan
+    WebkitBackdropFilter: 'blur(10px)',      // ✅ support Safari
+    // background: '#fefefe',
     boxShadow: '0 0 20px rgba(0,0,0,0.05)',
-    backgroundImage: `url(${logo})`,// ✅ bon
+    backgroundImage: `url(${logo})`,
     backgroundRepeat: 'no-repeat',
     backgroundSize: 100,
     backgroundPosition: 'top right',

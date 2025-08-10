@@ -1,3 +1,11 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+
 .App {
   text-align: center;
 }
@@ -36,3 +44,18 @@
     transform: rotate(360deg);
   }
 }
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  /* overflow: hidden; */
+}
+
+.main-content {
+  margin-left: 240px; /* ou la largeur exacte de ta sidebar */
+  flex: 1;
+  /* overflow: auto; */
+  height: 100vh;
+}
+
+
