@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
           date: item.pubDate,
           author: item.creator || item.author || 'Inconnu',
           snippet: item.contentSnippet || '',
-          source: feed.title || new URL(feedUrl).hostname,
+          sourceName: feed.title || new URL(feedUrl).hostname,
           rssLink: feed.link || feedUrl,
         });
       });

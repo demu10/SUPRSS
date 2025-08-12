@@ -1,20 +1,47 @@
+// backend/models/Collection.js
 const mongoose = require('mongoose');
 
-const MemberSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  permissions: {
-    read: { type: Boolean, default: true },
-    comment: { type: Boolean, default: true },
-    addFeeds: { type: Boolean, default: false }
-  }
+const collectionSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true // Enlève les espaces inutiles au début/fin
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  isShared: {
+    type: Boolean,
+    default: false
+  },
+  creator: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  members: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      permissions: {
+        canAddFeed: { type: Boolean, default: false },
+        canRead: { type: Boolean, default: true },
+        canComment: { type: Boolean, default: false },
+        isAdmin: { type: Boolean, default: false }
+      }
+    }
+  ],
+  feeds: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Feed'
+    }
+  ]
+}, { 
+  timestamps: true // Ajoute createdAt et updatedAt automatiquement
 });
 
-const CollectionSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  isShared: { type: Boolean, default: false },
-  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  members: [MemberSchema],
-  feeds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feed' }]
-});
-
-module.exports = mongoose.model('Collection', CollectionSchema);
+module.exports = mongoose.model('Collection', collectionSchema);
