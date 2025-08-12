@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
+// import Sidebar from '../components/Sidebar';
 import './HomePage.css';
 
 function HomePage() {
@@ -14,7 +14,7 @@ function HomePage() {
 
   return (
     <div className="layout">
-      <Sidebar />
+      {/* <Sidebar /> */}
       <div className="home-page">
 
         {/* Bande animée d'articles */}
@@ -31,12 +31,12 @@ function HomePage() {
                 Source : <strong>{article.sourceName}</strong>
               </p>
 
-              <p className="card-link">
+              {/* <p className="card-link">
                 Flux RSS :&nbsp;
                 <a href={article.feedUrl} target="_blank" rel="noopener noreferrer">
                   {article.feedUrl}
                 </a>
-              </p>
+              </p> */}
 
               <p className="card-date">
                 Publié le : {new Date(article.date).toLocaleDateString()}

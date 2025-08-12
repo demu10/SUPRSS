@@ -1,9 +1,9 @@
-
 import React, { useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import AuthPage from './pages/AuthPage';
-// import Sidebar from './components/Sidebar';
+import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
+import CollectionsPage from './pages/CollectionPage';
 import SetPasswordPage from './pages/SetPasswordPage';
 import { AuthContext } from './AuthContext';
 import { ToastContainer } from 'react-toastify';
@@ -22,7 +22,7 @@ function App() {
       setToken(tokenFromURL);
       localStorage.setItem('token', tokenFromURL);
 
-      // Nettoie l'URL pour ne pas garder ?token=...
+      // Nettoie l'URL
       window.history.replaceState({}, document.title, '/');
       navigate('/');
     }
@@ -42,20 +42,28 @@ function App() {
       />
 
       <Routes>
+        {/* Page de connexion */}
         <Route path="/login" element={<AuthPage />} />
 
-        <Route path="/" element={token ? <Navigate to="/home" /> : <AuthPage />} />
-        {/* <Route path="/home" element={token ? <HomePage /> : <Navigate to="/" />} /> */}
-        {/* <Route path="/" element={<LandingPage />} /> */}
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/set-password" element={<SetPasswordPage />} />
+        {/* Layout commun avec Sidebar */}
+        <Route path="/" element={<Layout />}>
+          {/* Page d'accueil : redirection selon connexion */}
+          <Route index element={token ? <Navigate to="/home" /> : <AuthPage />} />
 
+          {/* Pages accessibles si connecté */}
+          <Route path="home" element={token ? <HomePage /> : <Navigate to="/login" />} />
+          <Route path="collections" element={token ? <CollectionsPage /> : <Navigate to="/login" />} />
+          <Route path="set-password" element={<SetPasswordPage />} />
+        </Route>
+
+        {/* Route fallback si URL inconnue */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
   );
 }
 
-// 🔁 Wrapper nécessaire car `useNavigate` doit être utilisé dans un composant enfant de <Router>
+// 🔁 Wrapper car `useNavigate` doit être dans un composant enfant de <Router>
 export default function AppWrapper() {
   return (
     <Router>
