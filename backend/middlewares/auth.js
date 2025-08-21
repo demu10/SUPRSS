@@ -1,19 +1,20 @@
+// middlewares/auth.js
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-const auth = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ msg: 'Pas de token, accès refusé' });
-
-  const token = authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ msg: 'Token manquant, accès refusé' });
-
+module.exports = async (req, res, next) => {
   try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ message: 'Token manquant' });
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ message: 'Utilisateur non trouvé' });
+
+    req.user = user; // <- Obligatoire pour collectionController
     next();
   } catch (err) {
-    res.status(401).json({ msg: 'Token invalide, accès refusé' });
+    console.error(err);
+    res.status(401).json({ message: 'Authentification échouée' });
   }
 };
-
-module.exports = auth;

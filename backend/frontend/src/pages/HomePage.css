@@ -1,0 +1,122 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.home-page {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(to right, #a0e1eb, #61e5f7);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.animated-cards {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 300%;
+  height: 100%;
+  display: flex;
+  gap: 20px;
+  animation: scrollCards 80s linear infinite;
+  z-index: 0;
+}
+
+@keyframes scrollCards {
+  50% {
+    transform: translateX(1);
+  }
+  100% {
+    transform: translateX(-66.6%);
+  }
+}
+
+
+
+.card {
+  background-color: #ffffffcc;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px; /*20px*/
+  margin-right: 20px;
+  width: 320px;
+  height: 220px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  /* display: inline-block; */
+  display: flex;/*20px*/
+  flex-direction: column;/*20px*/
+  justify-content: flex-start; /*20px*/
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.card h4 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.card a {
+  text-decoration: none;
+  color: #1e88e5;
+}
+
+.card a:hover {
+  text-decoration: underline;
+}
+
+
+.card-date {
+  font-size: 0.8rem;
+  color: #555;
+}
+.card-snippet {
+  font-size: 0.9rem;
+  color: #000000;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;     /* ✅ limite à 3 lignes */
+   line-clamp: 3;
+  -webkit-box-orient: vertical;
+    box-orient: vertical;
+
+}
+
+
+
+.card-date,
+.card-snippet,
+.card-source,
+.card-link {
+  font-size: 13px;
+  margin-top: 4px;
+  color: #555;
+}
+
+.welcome-message {
+  position: relative;
+  z-index: 2;
+  max-width: 750px;
+  padding: 2rem 3rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.welcome-message h1 {
+  font-size: 2.5rem;
+  color: #0d47a1;
+  margin-bottom: 1rem;
+}
+
+.welcome-message p {
+  font-size: 1.2rem;
+  color: #1565c0;
+  line-height: 1.6;
+}

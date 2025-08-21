@@ -32,7 +32,7 @@ export default function Sidebar() {
           <li><Link to="/saved">⭐ Favoris</Link></li>
           <li><Link to="/automation">⚙️ Automatisation</Link></li>
           <li><Link to="/search">🔍 Recherche</Link></li>
-          <li><Link to="/add-feed">➕ Ajouter un flux</Link></li>
+          {/* <li><Link to="/add-feed">➕ Ajouter un flux</Link></li> */}
           <li><Link to="/import">📥 Importer</Link></li>
           <li><Link to="/export">📤 Exporter</Link></li>
           <li><Link to="/messaging">💬 Messagerie</Link></li>

@@ -10,21 +10,23 @@ const connectDB = require('./config/db');
 
 const app = express();
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Connexion à la base de données MongoDB
 connectDB();
 
+// Configuration CORS
 app.use(cors({
   origin: 'http://localhost:3000',
-  credentials: true, // pour permettre cookies et sessions
+  credentials: true,
 }));
-
-// Pour parser le JSON dans les requêtes POST/PUT
-app.use(express.json());
 
 // Configuration de la session (necessaire pour passport)
 app.use(session({
   secret: 'keyboard cat',
   saveUninitialized: true,
+  resave: false
 }));
 
 // Initialisation de Passport et gestion de session
@@ -35,14 +37,15 @@ app.use(passport.session());
 app.use('/api/users', require('./routes/users'));
 app.use('/api/auth', require('./routes/auth'));
 
-
-// Import des routes
+// Routes Collections, Articles, Feeds
 const collectionsRoutes = require('./routes/collections');
 app.use('/api/collections', collectionsRoutes);
 
 const articleRoutes = require('./routes/articles');
 app.use('/api/articles', articleRoutes);
 
+const feedsRoutes = require('./routes/feeds');
+app.use('/api/feeds', feedsRoutes);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 5000;

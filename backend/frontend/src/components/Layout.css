@@ -1,0 +1,28 @@
+/* src/components/Layout.css */
+
+/* Conteneur global en 2 colonnes */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+/* Zone sidebar */
+.sidebar-container {
+  width: 240px; /* largeur fixe */
+  background-color: #1f3b4d; /* couleur sidebar */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+/* Zone contenu */
+.main-content {
+  flex: 1;
+  padding: 0px;
+  overflow-y: auto;
+}

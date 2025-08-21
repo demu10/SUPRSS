@@ -1,47 +1,17 @@
-// backend/models/Collection.js
 const mongoose = require('mongoose');
 
 const collectionSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true // Enlève les espaces inutiles au début/fin
-  },
-  description: {
-    type: String,
-    default: ''
-  },
-  isShared: {
-    type: Boolean,
-    default: false
-  },
-  creator: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+  name: { type: String, required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   members: [
     {
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-      },
-      permissions: {
-        canAddFeed: { type: Boolean, default: false },
-        canRead: { type: Boolean, default: true },
-        canComment: { type: Boolean, default: false },
-        isAdmin: { type: Boolean, default: false }
-      }
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      role: { type: String, enum: ['creator', 'editor', 'reader'], default: 'reader' }
     }
   ],
-  feeds: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Feed'
-    }
-  ]
-}, { 
-  timestamps: true // Ajoute createdAt et updatedAt automatiquement
+  feeds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feed' }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Collection', collectionSchema);

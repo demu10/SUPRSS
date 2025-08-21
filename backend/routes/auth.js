@@ -2,11 +2,13 @@
 const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
-const User = require("../models/User"); // adapte le chemin si besoin
+const User = require("../models/User");
 const router = express.Router();
 
 // 🔒 Durée de validité du token
 const TOKEN_EXPIRATION = '365d';
+
+// ---------------- GOOGLE ----------------
 
 // ✅ Google Login Start
 router.get('/google',
@@ -14,27 +16,31 @@ router.get('/google',
 );
 
 // ✅ Google Callback
-router.get('/google/callback',
+router.get(
+  '/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:3000/login' }),
   (req, res) => {
-    console.log("🔥 req.user dans /google/callback =", req.user); // AJOUT ICI  
-    console.log("✅ Utilisateur authentifié par Google :", req.user); // 👈 AJOUTE CETTE LIGNE
+    if (!req.user) {
+      return res.redirect('http://localhost:3000/login?error=google');
+    }
+
     const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: TOKEN_EXPIRATION,
     });
 
-    res.redirect(`http://localhost:3000/?token=${token}`);
-    // Rediriger vers le frontend pour définir un mot de passe
-    // res.redirect(`http://localhost:3000/set-password?email=${user.email}`);
+    console.log("✅ Utilisateur Google authentifié :", req.user.email);
 
+    // Redirection vers frontend avec token
+    res.redirect(`http://localhost:3000/?token=${token}`);
   }
 );
-// ➕ Route d'échec (à ajouter juste après)
+
+// ➕ Route d'échec
 router.get('/google/failure', (req, res) => {
-  console.log("❌ ECHEC DE L'AUTHENTIFICATION GOOGLE");
-  res.send("Échec de l'authentification via Google.");
+  res.send("❌ Échec de l'authentification Google.");
 });
 
+// ---------------- GITHUB ----------------
 
 // ✅ GitHub Login Start
 router.get('/github',
@@ -42,21 +48,27 @@ router.get('/github',
 );
 
 // ✅ GitHub Callback
-router.get('/github/callback',
+router.get(
+  '/github/callback',
   passport.authenticate('github', { session: false, failureRedirect: 'http://localhost:3000/login' }),
   (req, res) => {
+    if (!req.user) {
+      return res.redirect('http://localhost:3000/login?error=github');
+    }
+
     const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
       expiresIn: TOKEN_EXPIRATION,
     });
 
-    res.redirect(`http://localhost:3000/?token=${token}`);
-    // Rediriger vers le frontend pour définir un mot de passe
-    res.redirect(`http://localhost:3000/set-password?email=${user.email}`);
+    console.log("✅ Utilisateur GitHub authentifié :", req.user.email);
 
+    // Redirection vers frontend avec token
+    res.redirect(`http://localhost:3000/?token=${token}`);
   }
 );
 
-// Route de vérification d'email
+// ---------------- VERIFICATION EMAIL ----------------
+
 router.get("/verify-email", async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).send("Token manquant");
@@ -74,15 +86,13 @@ router.get("/verify-email", async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    res.send("Ton compte est maintenant vérifié ! Tu peux te connecter.");
+    res.send("✅ Ton compte est maintenant vérifié ! Tu peux te connecter.");
   } catch (err) {
-    res.status(400).send("Lien invalide ou expiré.");
+    res.status(400).send("❌ Lien invalide ou expiré.");
   }
 });
 
-
-
-// ✅ Logout (optionnel mais utile)
+// ---------------- LOGOUT ----------------
 router.get('/logout', (req, res) => {
   req.logout(() => {
     res.redirect('http://localhost:3000/login');

@@ -13,13 +13,12 @@ export default function AuthPage() {
 
   // ✅ États
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState(''); // <-- remets cette ligne
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [msg, setMsg] = useState('');
   const [isRegister, setIsRegister] = useState(false);
-
 
   useEffect(() => {
     setEmail('');
@@ -28,7 +27,6 @@ export default function AuthPage() {
     setPrenom('');
     setMsg('');
   }, []);
-
 
   // Connexion
   const login = async () => {
@@ -43,14 +41,14 @@ export default function AuthPage() {
     } catch (err) {
       const msg = err.response?.data?.msg;
 
-      // ✅ Cas spécifique : le compte est Google-only ou hybride sans mot de passe défini
+      // Cas spécifique : le compte est Google-only ou hybride sans mot de passe défini
       if (
         msg?.includes("Ce compte a été créé via Google") ||
         msg?.includes("définir un mot de passe")
       ) {
         toast.info("Ce compte nécessite un mot de passe. Redirection...");
         setTimeout(() => {
-          navigate('/set-password', { state: { email } }); // ⬅️ passage d'email à la page set-password
+          navigate('/set-password', { state: { email } });
         }, 1500);
       } else {
         setMsg(msg || 'Erreur de connexion');
@@ -58,14 +56,13 @@ export default function AuthPage() {
     }
   };
 
-
   // Inscription
   const register = async () => {
     try {
       const res = await api.post('/users/register', { email, password, nom, prenom });
       setToken(res.data.token);
       toast.success("Inscription réussie !");
-      setIsRegister(false); // Redirige vers formulaire de connexion
+      setIsRegister(false);
       setEmail('');
       setPassword('');
       setNom('');
@@ -176,7 +173,6 @@ export default function AuthPage() {
   );
 }
 
-// 💄 Styles
 const styles = {
   container: {
     maxWidth: 420,
@@ -186,10 +182,9 @@ const styles = {
     border: '1px solid #ddd',
     borderRadius: 12,
     marginTop: 60,
-    background: 'rgba(255, 255, 255, 0.75)', // ✅ verre dépoli
-    backdropFilter: 'blur(10px)',            // ✅ flou en arrière-plan
-    WebkitBackdropFilter: 'blur(10px)',      // ✅ support Safari
-    // background: '#fefefe',
+    background: 'rgba(255, 255, 255, 0.75)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
     boxShadow: '0 0 20px rgba(0,0,0,0.05)',
     backgroundImage: `url(${logo})`,
     backgroundRepeat: 'no-repeat',
