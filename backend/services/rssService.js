@@ -1,55 +1,51 @@
-const Parser = require('rss-parser');
-const parser = new Parser();
-const Feed = require('../models/Feed');
-const Article = require('../models/Article');
+const cron = require('node-cron');
+const RSSParser = require('rss-parser');
+const Feed = require('./models/feeds');
+const Article = require('./models/articles');
 
-async function fetchFeedAndStore(feedDoc) {
-  if (!feedDoc || feedDoc.status !== 'active') return 0;
+const parser = new RSSParser();
+
+// Fonction pour récupérer et stocker les articles d'un flux
+async function fetchFeedArticles(feed) {
   try {
-    const feed = await parser.parseURL(feedDoc.url);
-    let added = 0;
-    for (const item of feed.items) {
-      const link = item.link || item.guid;
-      if (!link) continue;
+    const rss = await parser.parseURL(feed.url);
 
-      const exists = await Article.findOne({ link }); // changed from url → link
-      if (exists) continue;
-
-      const art = {
-        feedId: feedDoc._id, // changed from feed → feedId
-        title: item.title || 'Sans titre',
-        link, // changed from url → link
-        date: item.isoDate
-          ? new Date(item.isoDate)
-          : (item.pubDate ? new Date(item.pubDate) : new Date()),
-        author: item.creator || item.author || '',
-        snippet: item.contentSnippet || '', // added snippet field
-        content: item.content || item['content:encoded'] || item.contentSnippet || '',
-        sourceName: feed.title || feedDoc.title || '', // fallback adapted
-        feedUrl: feed.link || feedDoc.url, // added feedUrl
-        collectionIds: [feedDoc.collectionId] // added collections
-      };
-
-      await Article.create(art);
-      added++;
+    for (const item of rss.items) {
+      // Vérifier si l'article existe déjà
+      const exists = await Article.findOne({ link: item.link });
+      if (!exists) {
+        await Article.create({
+          feedId: feed._id,
+          collectionId: feed.collectionId,
+          title: item.title,
+          link: item.link,
+          author: item.creator || item.author || '',
+          publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+          summary: item.contentSnippet || '',
+          isRead: false,
+          isFavorite: false
+        });
+      }
     }
-
-    await Feed.findByIdAndUpdate(feedDoc._id, { lastFetchedAt: new Date() }); // added update
-
-    return added;
   } catch (err) {
-    console.error('rssService.fetchFeedAndStore error', feedDoc.url, err.message);
-    return 0;
+    console.error(`Erreur récupération flux ${feed.title}:`, err.message);
   }
 }
 
-async function fetchAllActiveFeeds() {
-  const feeds = await Feed.find({ status: 'active' });
-  let total = 0;
-  for (const f of feeds) {
-    total += await fetchFeedAndStore(f);
+// Fonction pour récupérer tous les flux actifs
+async function fetchAllFeeds() {
+  try {
+    const feeds = await Feed.find({ status: 'active' });
+    for (const feed of feeds) {
+      await fetchFeedArticles(feed);
+    }
+  } catch (err) {
+    console.error('Erreur récupération des flux:', err.message);
   }
-  return total;
 }
 
-module.exports = { fetchFeedAndStore, fetchAllActiveFeeds };
+// Planifier selon la fréquence (ici toutes les 10 minutes par défaut)
+cron.schedule('*/10 * * * *', () => {
+  console.log('Lancement de la récupération RSS...');
+  fetchAllFeeds();
+});

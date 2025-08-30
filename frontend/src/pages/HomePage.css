@@ -27,8 +27,8 @@
 }
 
 @keyframes scrollCards {
-  50% {
-    transform: translateX(1);
+  0% {
+    transform: translateX(0);
   }
   100% {
     transform: translateX(-66.6%);

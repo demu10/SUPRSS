@@ -6,9 +6,15 @@ function HomePage() {
   const [articles, setArticles] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/articles')
+    fetch('http://localhost:5000/api/articles') //public
       .then(res => res.json())
-      .then(data => setArticles(data))
+      .then(data => {
+        if (Array.isArray(data)) {
+          setArticles(data);
+        } else {
+          setArticles([]);
+        }
+      })
       .catch(err => console.error('Erreur chargement articles:', err));
   }, []);
 
@@ -19,7 +25,7 @@ function HomePage() {
 
         {/* Bande animée d'articles */}
         <div className="animated-cards">
-          {articles.map((article, index) => (
+          {[...articles, ...articles, ...articles].map((article, index) => (
             <div className="card" key={index}>
               <h4>
                 <a href={article.link} target="_blank" rel="noopener noreferrer">
@@ -31,12 +37,12 @@ function HomePage() {
                 Source : <strong>{article.sourceName}</strong>
               </p>
 
-              {/* <p className="card-link">
+              <p className="card-link">
                 Flux RSS :&nbsp;
                 <a href={article.feedUrl} target="_blank" rel="noopener noreferrer">
                   {article.feedUrl}
                 </a>
-              </p> */}
+              </p>
 
               <p className="card-date">
                 Publié le : {new Date(article.date).toLocaleDateString()}

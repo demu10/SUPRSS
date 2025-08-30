@@ -12,10 +12,10 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CollectionsPage from './pages/CollectionPage';
 import FeedsPage from './pages/FeedsPage';
+import ArticlesPage from "./pages/ArticlesPage";
 import SavedPage from './pages/SavedPage';
 import AutomationPage from './pages/AutomationPage';
 import SearchPage from './pages/SearchPage';
-// import AddFeedPage from './pages/AddFeedPage';
 import ImportPage from './pages/ImportPage';
 import ExportPage from './pages/ExportPage';
 import MessagingPage from './pages/MessagingPage';
@@ -24,12 +24,19 @@ import SetPasswordPage from './pages/SetPasswordPage';
 import ConfirmEmailPage from './pages/ConfirmEmailPage';
 import Layout from './components/Layout';
 
+// ✅ Route privée
+function PrivateRoute({ children }) {
+  const { token } = useContext(AuthContext);
+  return token ? children : <Navigate to="/login" />;
+}
+
 function App() {
-  const { token, setToken } = useContext(AuthContext);
+  // ⬇️ on enlève `token` pour éviter le warning "assigned but never used"
+  const { setToken } = useContext(AuthContext);
   const [checkingToken, setCheckingToken] = useState(true);
   const navigate = useNavigate();
 
-  // Vérifie token depuis URL
+  // Récupère un token dans l’URL (ex: ...?token=XXX) après OAuth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromURL = params.get('token');
@@ -41,13 +48,13 @@ function App() {
     }
   }, [navigate, setToken]);
 
-  // Vérifie validité token backend
+  // Valide le token côté backend
   useEffect(() => {
     const validateToken = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          await api.get('/users/validate-token');
+          await api.get('/users/validate-token'); // doit envoyer l'Authorization en header via ton instance api
           setToken(storedToken);
         } catch (err) {
           toast.error('Token invalide, veuillez vous reconnecter');
@@ -60,7 +67,9 @@ function App() {
     validateToken();
   }, [setToken]);
 
-  if (checkingToken) return <p style={{ textAlign: 'center', marginTop: 50 }}>Vérification du token...</p>;
+  if (checkingToken) {
+    return <p style={{ textAlign: 'center', marginTop: 50 }}>Vérification du token...</p>;
+  }
 
   return (
     <>
@@ -76,27 +85,33 @@ function App() {
       />
 
       <Routes>
-        {/* Page de connexion */}
+        {/* Public */}
         <Route path="/login" element={<AuthPage />} />
-
-        {/* Confirmation email */}
         <Route path="/confirm/:token" element={<ConfirmEmailPage />} />
 
-        {/* Layout commun avec Sidebar */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={token ? <Navigate to="/home" /> : <AuthPage />} />
-          <Route path="home" element={token ? <HomePage /> : <Navigate to="/login" />} />
-          <Route path="dashboard" element={token ? <DashboardPage /> : <Navigate to="/login" />} />
-          <Route path="collections" element={token ? <CollectionsPage /> : <Navigate to="/login" />} />
-          <Route path="feeds" element={token ? <FeedsPage /> : <Navigate to="/login" />} />
-          <Route path="saved" element={token ? <SavedPage /> : <Navigate to="/login" />} />
-          <Route path="automation" element={token ? <AutomationPage /> : <Navigate to="/login" />} />
-          <Route path="search" element={token ? <SearchPage /> : <Navigate to="/login" />} />
-          {/* <Route path="add-feed" element={token ? <AddFeedPage /> : <Navigate to="/login" />} /> */}
-          <Route path="import" element={token ? <ImportPage /> : <Navigate to="/login" />} />
-          <Route path="export" element={token ? <ExportPage /> : <Navigate to="/login" />} />
-          <Route path="messaging" element={token ? <MessagingPage /> : <Navigate to="/login" />} />
-          <Route path="preferences" element={token ? <PreferencesPage /> : <Navigate to="/login" />} />
+        {/* Protégé + Layout */}
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Layout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<Navigate to="/home" />} />
+          <Route path="home" element={<HomePage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="collections" element={<CollectionsPage />} />
+          <Route path="feeds" element={<FeedsPage />} />
+          {/* ⬇️ sans slash pour rester dans le Layout */}
+          <Route path="articles/:feedId" element={<ArticlesPage />} />
+          <Route path="saved" element={<SavedPage />} />
+          <Route path="automation" element={<AutomationPage />} />
+          <Route path="search" element={<SearchPage />} />
+          <Route path="import" element={<ImportPage />} />
+          <Route path="export" element={<ExportPage />} />
+          <Route path="messaging" element={<MessagingPage />} />
+          <Route path="preferences" element={<PreferencesPage />} />
           <Route path="set-password" element={<SetPasswordPage />} />
         </Route>
 
