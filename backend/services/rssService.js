@@ -1,51 +1,53 @@
 const cron = require('node-cron');
 const RSSParser = require('rss-parser');
-const Feed = require('./models/feeds');
-const Article = require('./models/articles');
+const mongoose = require('mongoose');
+const Feed = require('./models/Feed');
+const Article = require('./models/Article');
 
 const parser = new RSSParser();
 
-// Fonction pour récupérer et stocker les articles d'un flux
+mongoose.connect('mongodb://localhost:27017/suprss_db', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
 async function fetchFeedArticles(feed) {
   try {
     const rss = await parser.parseURL(feed.url);
+    for (const item of rss.items || []) {
+      if (!item.link) continue;
 
-    for (const item of rss.items) {
-      // Vérifier si l'article existe déjà
       const exists = await Article.findOne({ link: item.link });
-      if (!exists) {
-        await Article.create({
-          feedId: feed._id,
-          collectionId: feed.collectionId,
-          title: item.title,
-          link: item.link,
-          author: item.creator || item.author || '',
-          publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-          summary: item.contentSnippet || '',
-          isRead: false,
-          isFavorite: false
-        });
-      }
+      if (exists) continue;
+
+      await Article.create({
+        feedId: feed._id,
+        collectionIds: [feed.collectionId],
+        title: item.title || '',
+        link: item.link,
+        date: item.pubDate ? new Date(item.pubDate) : new Date(),
+        author: item.creator || item.author || '',
+        snippet: item.contentSnippet || '',
+        content: item.content || item.contentSnippet || '',
+        sourceName: rss.title || feed.name,
+        feedUrl: feed.url,
+        readBy: [],
+        favoritedBy: []
+      });
     }
   } catch (err) {
-    console.error(`Erreur récupération flux ${feed.title}:`, err.message);
+    console.error(`Erreur flux ${feed.name} :`, err.message);
   }
 }
 
-// Fonction pour récupérer tous les flux actifs
 async function fetchAllFeeds() {
-  try {
-    const feeds = await Feed.find({ status: 'active' });
-    for (const feed of feeds) {
-      await fetchFeedArticles(feed);
-    }
-  } catch (err) {
-    console.error('Erreur récupération des flux:', err.message);
+  const feeds = await Feed.find({ status: 'active' });
+  for (const feed of feeds) {
+    await fetchFeedArticles(feed);
   }
 }
 
-// Planifier selon la fréquence (ici toutes les 10 minutes par défaut)
-cron.schedule('*/10 * * * *', () => {
-  console.log('Lancement de la récupération RSS...');
+cron.schedule('*/30 * * * *', () => {
+  console.log('⏰ CRON RSS lancé');
   fetchAllFeeds();
 });

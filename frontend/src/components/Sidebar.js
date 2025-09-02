@@ -29,7 +29,7 @@ export default function Sidebar() {
           <li><Link to="/dashboard">📊 Dashboard</Link></li>
           <li><Link to="/collections">📚 Collections</Link></li>
           <li><Link to="/feeds">📰 Flux</Link></li>
-          <li><Link to="/saved">⭐ Favoris</Link></li>
+          <li><Link to="/favorites">⭐ Favoris</Link></li>  
           <li><Link to="/automation">⚙️ Automatisation</Link></li>
           <li><Link to="/search">🔍 Recherche</Link></li>
           {/* <li><Link to="/add-feed">➕ Ajouter un flux</Link></li> */}

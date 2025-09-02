@@ -9,7 +9,8 @@ const collectionSchema = new mongoose.Schema({
       role: { type: String, enum: ['creator', 'editor', 'reader'], default: 'reader' }
     }
   ],
-  feeds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feed' }],
+  // feeds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Feed' }],
+  feeds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

@@ -6,7 +6,7 @@ function HomePage() {
   const [articles, setArticles] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/articles') //public
+    fetch('http://localhost:5000/api/articles-public') //public
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

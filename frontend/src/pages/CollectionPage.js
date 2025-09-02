@@ -157,6 +157,32 @@ export default function CollectionsPage() {
     setOpenArticleModal(true);
   };
 
+  const handleRemoveFromCollection = async (articleId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/collections/${selectedCollection._id}/articles/${articleId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        // Mets à jour l'affichage :
+        setCollections(prev => prev.map(c =>
+          c._id === selectedCollection._id
+            ? { ...c, articles: c.articles.filter(a => a._id !== articleId) }
+            : c
+        ));
+
+      } else {
+        alert("Erreur lors du retrait.");
+      }
+    } catch (err) {
+      console.error("Erreur:", err);
+    }
+  };
+
+
   const saveArticle = async () => {
     try {
       const body = {
@@ -179,8 +205,9 @@ export default function CollectionsPage() {
     } catch (err) { alert(err.message); }
   };
 
+
   const deleteArticle = async (articleId) => {
-    if (!window.confirm("Supprimer cet article ?")) return;
+    if (!window.confirm("Supprimer cet article de cette collection  ?")) return;
     try {
       const res = await fetch(`http://localhost:5000/api/articles/${articleId}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
@@ -249,8 +276,16 @@ export default function CollectionsPage() {
 
                   <Box mt={2} display="flex" justifyContent="space-between" gap={1}>
                     <Button variant="outlined" onClick={() => { setSelectedCollection(c); setOpenMembers(true); }}>Membres</Button>
-                    <Button variant="contained" onClick={() => openArticleForm(c)}>Ajouter Article</Button>
+                    {/* <Button variant="contained" onClick={() => openArticleForm(c)}>Ajouter Article</Button> */}
                     <Button variant="contained" color="error" onClick={() => deleteCollection(c._id)}>Supprimer</Button>
+                    {/* <Button size="small" color="secondary" onClick={() => handleRemoveFromCollection(a._id)}>
+                      Retirer
+                    </Button> */}
+                    <Button variant="outlined" onClick={() => navigate(`/collections/${c._id}/articles`)}>
+                      Voir les articles
+                    </Button>
+
+
                   </Box>
                 </CardContent>
               </Card>

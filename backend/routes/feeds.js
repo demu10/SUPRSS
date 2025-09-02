@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const Feed = require('../models/Feed');
 const Parser = require('rss-parser');
+const parser = new Parser();
+const Article = require('../models/Article');
 const auth = require('../middlewares/auth');
 
 // ============ PUBLIC ============
@@ -72,24 +74,55 @@ router.get('/collection/:collectionId', async (req, res) => {
 // Créer un feed (protégé)
 router.post('/', auth, async (req, res) => {
   try {
-    const payload = req.body;
+    const {
+      name,
+      url,
+      description,
+      categories,
+      updateFrequency,
+      status,
+      collectionId
+    } = req.body;
+
+    // Validation minimale
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      return res.status(400).json({ error: "L'URL du flux est requise." });
+    }
+
+    // Tenter de parser le titre depuis le flux RSS si le nom est manquant
+    let finalName = name?.trim();
+    if (!finalName) {
+      try {
+        const parsed = await parser.parseURL(url.trim());
+        finalName = parsed.title || "Flux sans titre";
+      } catch (e) {
+        return res.status(400).json({
+          error: "Impossible de récupérer ou parser le flux RSS fourni. Vérifiez l'URL.",
+          details: e.message
+        });
+      }
+    }
+
     const feed = await Feed.create({
-      title: payload.title,
-      url: payload.url,
-      description: payload.description,
-      categories: payload.categories || [],
-      updateFrequency: payload.updateFrequency || 'daily',
-      status: payload.status || 'active',
-      collectionId: payload.collectionId || null,
+      name: finalName,
+      url: url.trim(),
+      description: description?.trim() || '',
+      categories: categories || [],
+      updateFrequency: updateFrequency || 'daily',
+      status: status || 'active',
+      collectionId: collectionId || null,
       membersCanEdit: [req.user.id],
     });
+
     return res.status(201).json(feed);
   } catch (err) {
     console.error('Erreur POST /api/feeds :', err);
-    return res.status(400).json({ error: 'Impossible de créer le flux' });
+    return res.status(400).json({
+      error: 'Impossible de créer le flux',
+      details: err.message || err
+    });
   }
 });
-
 // Supprimer un feed (protégé)
 router.delete('/:id', auth, async (req, res) => {
   try {
@@ -103,5 +136,58 @@ router.delete('/:id', auth, async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+// Endpoint pour rafraîchir un flux et enregistrer les articles
+router.post('/:id/refresh', auth, async (req, res) => {
+  try {
+    const feed = await Feed.findById(req.params.id);
+    if (!feed) return res.status(404).json({ message: 'Flux introuvable' });
+
+    const parsed = await parser.parseURL(feed.url);
+    let added = 0;
+
+    for (const item of parsed.items) {
+      const link = item.link;
+      if (!link) continue;
+
+      const exists = await Article.findOne({ link });
+      if (exists) continue;
+
+      const article = new Article({
+        feedId: feed._id,
+        collectionIds: [feed.collectionId],
+        title: item.title || '',  // title
+        link,
+        date: item.pubDate ? new Date(item.pubDate) : new Date(),
+        author: item.creator || item.author || '',
+        snippet: item.contentSnippet || '',
+        content: item.content || item.contentSnippet || '',
+        sourceName: parsed.title || feed.title || '',
+        feedUrl: parsed.link || feed.url,
+        readBy: [],              // 👈 à ajouter
+        favoritedBy: [], 
+      });
+
+      await article.save();
+      added++;
+    }
+
+    res.status(200).json({ message: `✅ ${added} article(s) ajouté(s)` });
+  } catch (error) {
+    console.error('Erreur de parsing RSS:', error);
+    res.status(500).json({ message: 'Erreur lors du rafraîchissement du flux' });
+  }
+});
+
+router.get('/feed/:feedId/articles', auth, async (req, res) => {
+  try {
+    const articles = await Article.find({ feedId: req.params.feedId }).sort({ date: -1 });
+    res.json(articles);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur lors de la récupération des articles.' });
+  }
+});
+
 
 module.exports = router;

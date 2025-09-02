@@ -43,63 +43,85 @@ export default function FeedsPage() {
 
   useEffect(() => { fetchFeeds(); }, [fetchFeeds]);
 
-  // Fonction pour récupérer les articles d'un flux (ajustée)
-  const fetchArticles = async (feedId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/articles/feed/${feedId}/articles`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`, // Assure-toi que le token est passé ici
-        },
-      });
+  // Fonction pour récupérer les articles d'un flux (ajustée)   const fetchArticles = async (feedId) => {
+  // const fetchArticles = async (feedId) => {
+  //   try {
+  //     const response = await fetch(`http://localhost:5000/api/articles/feed/${feedId}/articles`, {
+  //       method: "GET",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`, // Assure-toi que le token est passé ici
+  //       },
+  //     });
 
-      if (!response.ok) {
-        throw new Error("Erreur lors de la récupération des articles");
-      }
+  //     if (!response.ok) {
+  //       throw new Error("Erreur lors de la récupération des articles");
+  //     }
 
-      const articles = await response.json();
-      console.log(articles); // Vérifie si les articles sont récupérés correctement
+  //     const articles = await response.json();
+  //     console.log(articles); // Vérifie si les articles sont récupérés correctement
 
-      // Naviguer vers la page des articles si nécessaire
-      navigate(`/feeds/${feedId}/articles`, { state: { articles } });
-    } catch (err) {
-      console.error("Erreur lors de la récupération des articles:", err);
+  //     // Naviguer vers la page des articles si nécessaire
+  //     navigate(`/feeds/${feedId}/articles`, { state: { articles } });
+  //   } catch (err) {
+  //     console.error("Erreur lors de la récupération des articles:", err);
+  //   }
+  // };
+  const refreshFeed = async (feedId) => {
+  const res = await fetch(`http://localhost:5000/api/feeds/${feedId}/refresh`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-  };
+  });
+  const data = await res.json();
+  alert(data.message);
+  window.dispatchEvent(new Event('refreshFeeds'));
+};
 
   const createFeed = async () => {
-    try {
-      const payload = {
-        ...newFeed,
-        categories: newFeed.categories
-          ? newFeed.categories.split(",").map(c => c.trim()).filter(Boolean)
-          : []
-      };
-      const res = await fetch("http://localhost:5000/api/feeds", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error("Impossible de créer le flux");
-      const created = await res.json();
-      setFeeds(prev => [...prev, created]);
-      setOpenCreate(false);
-      setNewFeed({
-        name: "", //title 
-        url: "",
-        description: "",
-        categories: "",
-        updateFrequency: "daily",
-        status: "active",
-        collectionId: ""
-      });
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+  if (!newFeed.name.trim() || !newFeed.url.trim()) {
+    alert("Veuillez fournir un nom et une URL valides pour le flux.");
+    return;
+  }
+
+  try {
+    const payload = {
+      ...newFeed,
+      categories: newFeed.categories
+        ? newFeed.categories.split(",").map(c => c.trim()).filter(Boolean)
+        : []
+    };
+
+    const res = await fetch("http://localhost:5000/api/feeds", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error("Impossible de créer le flux");
+
+    const created = await res.json();
+    setFeeds(prev => [...prev, created]);
+
+    setOpenCreate(false);
+    setNewFeed({
+      name: "",
+      url: "",
+      description: "",
+      categories: "",
+      updateFrequency: "daily",
+      status: "active",
+      collectionId: ""
+    });
+
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   const deleteFeed = async (id) => {
     if (!window.confirm("Supprimer ce flux ?")) return;
@@ -136,7 +158,7 @@ export default function FeedsPage() {
           {feeds.map(f => (
             <Card key={f._id} sx={{ width: { xs: "100%", sm: "calc(50% - 12px)", lg: "calc(33.333% - 16px)" }, borderRadius: 3, boxShadow: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>{f.title}</Typography>
+                <Typography variant="h6" gutterBottom>{f.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{f.url}</Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>{f.description}</Typography>
 
@@ -154,10 +176,12 @@ export default function FeedsPage() {
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => fetchArticles(f._id)} // Appelle fetchArticles avec l'ID du flux
+                    onClick={() => navigate(`/feeds/${f._id}/articles`)}
+                    // onClick={() => fetchArticles(f._id)} // Appelle fetchArticles avec l'ID du flux
                   >
                     Articles
                   </Button>
+                  <Button onClick={() => refreshFeed(f._id)}>🔄 Rafraîchir</Button>
                   <Tooltip title="Supprimer">
                     <IconButton color="error" onClick={() => deleteFeed(f._id)}>
                       <Delete />
@@ -175,8 +199,8 @@ export default function FeedsPage() {
         <DialogContent dividers>
           <TextField
             margin="normal" label="Nom du flux" fullWidth required
-            value={newFeed.title}
-            onChange={e => setNewFeed({ ...newFeed, title: e.target.value })}
+            value={newFeed.name}
+            onChange={e => setNewFeed({ ...newFeed, name: e.target.value })}
           />
           <TextField
             margin="normal" label="URL RSS" fullWidth required

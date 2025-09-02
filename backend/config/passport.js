@@ -1,108 +1,100 @@
+// backend/config/passport.js
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const GitHubStrategy = require('passport-github').Strategy;
+const GitHubStrategy = require('passport-github2').Strategy; // ← switch conseillé
 const User = require('../models/User');
 
-const {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  GITHUB_CLIENT_ID,
-  GITHUB_CLIENT_SECRET
-} = process.env;
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 
-console.log("✅ Initialisation des stratégies Passport");
+// Si dispo, on laisse l’ENV prioritaire, sinon on reconstruit.
+const GOOGLE_CALLBACK =
+  process.env.GOOGLE_CALLBACK_URL || `${BASE_URL}/api/auth/google/callback`;
+const GITHUB_CALLBACK =
+  process.env.GITHUB_CALLBACK_URL || `${BASE_URL}/api/auth/github/callback`;
 
-// ✅ GOOGLE STRATEGY
-if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
-  console.log("✅ Chargement de la stratégie Google");
+console.log('✅ Initialisation des stratégies Passport');
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  console.log('✅ Chargement de la stratégie Google');
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: GOOGLE_CALLBACK,
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value;
+          let user = await User.findOne({ email });
 
-  passport.use(new GoogleStrategy(
-    {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:5000/api/auth/google/callback',
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value;
+          if (user) {
+            if (!user.googleId) user.googleId = profile.id;
+            if (!user.provider || user.provider === 'local') user.provider = 'both';
+            user.isVerified = true;
+            await user.save();
+            return done(null, user);
+          }
 
-        let user = await User.findOne({ email });
-
-        if (user) {
-          // ✅ Mise à jour du compte existant
-          if (!user.googleId) user.googleId = profile.id;
-          if (!user.provider || user.provider === 'local') user.provider = 'both';
-          user.isVerified = true;
-          await user.save();
-          return done(null, user);
+          const newUser = await User.create({
+            googleId: profile.id,
+            email,
+            nom: profile.name?.familyName || '',
+            prenom: profile.name?.givenName || '',
+            provider: 'google',
+            isVerified: true,
+          });
+          return done(null, newUser);
+        } catch (e) {
+          return done(e, null);
         }
-
-        // ✅ Création d’un nouveau compte Google
-        const newUser = await User.create({
-          googleId: profile.id,
-          email,
-          nom: profile.name?.familyName || '',
-          prenom: profile.name?.givenName || '',
-          provider: 'google',
-          isVerified: true
-        });
-
-        return done(null, newUser);
-      } catch (err) {
-        return done(err, null);
       }
-    }
-  ));
+    )
+  );
 }
 
-// ✅ GITHUB STRATEGY
-if (GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET) {
-  console.log("✅ Chargement de la stratégie GitHub");
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  console.log('✅ Chargement de la stratégie GitHub');
+  passport.use(
+    new GitHubStrategy(
+      {
+        clientID: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        callbackURL: GITHUB_CALLBACK,
+        scope: ['user:email'],
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
+          let user = await User.findOne({ email });
 
-  passport.use(new GitHubStrategy(
-    {
-      clientID: GITHUB_CLIENT_ID,
-      clientSecret: GITHUB_CLIENT_SECRET,
-      callbackURL: 'http://localhost:5000/api/auth/github/callback',
-      scope: ['user:email']
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
+          if (user) {
+            if (!user.githubId) user.githubId = profile.id;
+            if (!user.provider || user.provider === 'local') user.provider = 'both';
+            user.isVerified = true;
+            await user.save();
+            return done(null, user);
+          }
 
-        let user = await User.findOne({ email });
-
-        if (user) {
-          // ✅ Mise à jour du compte existant
-          if (!user.githubId) user.githubId = profile.id;
-          if (!user.provider || user.provider === 'local') user.provider = 'both';
-          user.isVerified = true;
-          await user.save();
-          return done(null, user);
+          const newUser = await User.create({
+            githubId: profile.id,
+            email,
+            nom: '',
+            prenom: profile.username || '',
+            provider: 'github',
+            isVerified: true,
+          });
+          return done(null, newUser);
+        } catch (e) {
+          return done(e, null);
         }
-
-        // ✅ Création d’un nouveau compte GitHub
-        const newUser = await User.create({
-          githubId: profile.id,
-          email,
-          nom: '',
-          prenom: profile.username || '',
-          provider: 'github',
-          isVerified: true
-        });
-
-        return done(null, newUser);
-      } catch (err) {
-        return done(err, null);
       }
-    }
-  ));
+    )
+  );
 }
 
-// ✅ Serialisation/Désérialisation
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser((id, done) => {
   User.findById(id)
-    .then(user => done(null, user))
-    .catch(err => done(err, null));
+    .then((user) => done(null, user))
+    .catch((err) => done(err, null));
 });

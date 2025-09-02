@@ -11,11 +11,14 @@ import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CollectionsPage from './pages/CollectionPage';
+import CollectionArticlesPage from './pages/CollectionArticlesPage';
 import FeedsPage from './pages/FeedsPage';
+import FeedArticlesPage from './pages/FeedArticlesPage';
 import ArticlesPage from "./pages/ArticlesPage";
-import SavedPage from './pages/SavedPage';
+import FavoriteArticlesPage from './pages/FavoriteArticlesPage'; // adapte le chemin si nécessaire
 import AutomationPage from './pages/AutomationPage';
-import SearchPage from './pages/SearchPage';
+// import SearchPage from './pages/SearchPage';
+import SearchResultsPage from './pages/SearchResultsPage'; // corrige l'erreur jsx-no-undef
 import ImportPage from './pages/ImportPage';
 import ExportPage from './pages/ExportPage';
 import MessagingPage from './pages/MessagingPage';
@@ -103,11 +106,14 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="collections" element={<CollectionsPage />} />
           <Route path="feeds" element={<FeedsPage />} />
+          <Route path="/feeds/:feedId/articles" element={<PrivateRoute><FeedArticlesPage /></PrivateRoute>} />
           {/* ⬇️ sans slash pour rester dans le Layout */}
+          <Route path="/collections/:id/articles" element={<CollectionArticlesPage />} />
           <Route path="articles/:feedId" element={<ArticlesPage />} />
-          <Route path="saved" element={<SavedPage />} />
+          <Route path="/favorites" element={<FavoriteArticlesPage />} />
           <Route path="automation" element={<AutomationPage />} />
-          <Route path="search" element={<SearchPage />} />
+          {/* <Route path="search" element={<SearchPage />} /> */}
+          <Route path="/search" element={<SearchResultsPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="export" element={<ExportPage />} />
           <Route path="messaging" element={<MessagingPage />} />
